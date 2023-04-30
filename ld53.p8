@@ -10,14 +10,11 @@ function _init()
 	}
 	truck = {
 		x = 3*8,
-		y = 0,
+		y = 5 * 8,
 		w = 7,
 		h = 8
 	}
 	truck.grid = create_truck_grid()
-	printh(can_put_shape(-1, -1, create_shape_1())) 
-	printh(can_put_shape(7, 7, create_shape_1()))
-	printh(can_put_shape(3, 4, create_shape_1()))
 end
 
 function _update60()
@@ -29,7 +26,7 @@ end
 function _draw()
 	cls()
 	camera(p.x - 60, p.y - 60)
-	map(0, 0, 0, 0, 17, 17)
+	map(0, 0, 0, 0, 24, 24)
 
  -- dessin du camion
  for row = 1, #(truck.grid) do 
@@ -48,23 +45,7 @@ function _draw()
 	spr(1, p.x, p.y, 1, 1, p.flipped)
 	
 	if p.holding_shape then
-		-- if (can_put_shape(p.x, p.y, p.holding_shape)) 
-		local dx = flr(abs(p.x - truck.x) / 8) + 1
-		local dy = flr(abs(p.y - truck.y) / 8) + 1
-		if dx < truck.w and dy < truck.h then
-			draw_placeholder(dx, dy, p.holding_shape)
-		end
-		for row=1,#(p.holding_shape) do
-			for column=1,#(p.holding_shape[row]) do
-				if p.holding_shape[row][column] == true then
-					fill_rect(p.x - #(p.holding_shape[row]) * 4 + column * 8 - 4,
-															p.y - #(p.holding_shape) * 8 + row * 8 - 12,
-															8,
-															8,
-															4)
-				end
-			end
-		end
+		draw_placeholder(p.x, p.y, p.holding_shape)
 	end
 	
 	if can_interact(p.x / 8, p.y / 8) then
@@ -73,10 +54,15 @@ function _draw()
 end
 
 function draw_placeholder(x, y, shape)
+	local x, y = placeholder_offset(x, y, shape)
+	local dx, dy = flr(truck.x / 8) - 1, flr(truck.y / 8) - 1
+	
 	for row = 1, #shape do
 		for column = 1, #(shape[row]) do
-			if truck.grid[row + y][column + x] == true and shape[row][column] == true then
-				draw_rect(truck.x + x * 8 + column * 8, truck.y + y * 8 + row * 8, 8, 8, 10)
+			if truck.grid[row + y] and truck.grid[row + y][column + x] == false and shape[row][column] == true then
+				draw_rect((x + column + dx) * 8, (y + row + dy) * 8, 8, 8, 10)		
+			elseif shape[row][column] == true then
+				draw_rect((x + column + dx) * 8, (y + row + dy) * 8, 8, 8, 8)	
 			end
 		end
 	end
@@ -115,9 +101,11 @@ end
 
 function drop_shape()
 	if p.holding_shape and btnp(❎) then
-		local dx, dy = flr((p.x - truck.x) / 8), flr((p.y - truck.y) / 8)
-		if can_put_shape(dx, dy, p.holding_shape) then
-			add_shape_to_grid(dx, dy, p.holding_shape)
+		local x, y = placeholder_offset(p.x, p.y, p.holding_shape)
+		if can_put_shape(p.x, p.y, p.holding_shape) then
+			printh(x)
+			printh(y)
+			add_shape_to_grid(x, y, p.holding_shape)
 			p.holding_shape = nil
 		end
 	end
@@ -153,6 +141,32 @@ end
 function is_collidable(tile)
 	return fget(tile, 0)
 end
+
+function placeholder_offset(x, y, shape)
+	return flr((x - truck.x) / 8), flr((y - truck.y) / 8) - #shape - 1
+end
+
+function can_put_shape(x, y, shape)
+	local x, y = placeholder_offset(x, y, shape)
+	local shape_fits = x >= 0
+																				and truck.w >= x + #(shape[1])
+																				and y >= 0
+																				and truck.h >= y + #(shape)
+	
+	
+	if (not shape_fits) return false
+	
+	for row = 1, #(shape) do
+  for column = 1, #(shape[row]) do
+	  if shape[row][column] == true and truck.grid[row + y][column + x] == true then
+    return false
+   end
+  end 
+ end
+ 
+	return true
+end
+
 -->8
 -- truck
 
@@ -170,27 +184,13 @@ end
 function add_shape_to_grid(x, y, shape)
 	for row = 1, #(shape) do
     for column = 1, #(shape[row]) do
-	     truck.grid[row][column] = shape[row][column]
+    		if shape[row][column] == true then
+		     	truck.grid[row + y][column + x] = shape[row][column]
+    		end
     end 
   end
 end
 
-function can_put_shape(x, y, shape)
-	local shape_fits_in_grid = y - #shape >= 0 
-																							 and (#shape + y) <= #(truck.grid)
-																							 and x - #(shape[1]) >= 0
-																							 and #(shape[1]) + x <= #(truck.grid[1])
-	if (not shape_fits_in_grid) return false
-
-	for row = 1, #(shape) do
-    for column = 1, #(shape[row]) do
-	     if shape[row][column] == true and truck.grid[x + row][y + column] == true then
-        return false
-      end
-    end 
-  end
-	return true
-end
 
 -->8
 -- shapes
@@ -226,6 +226,7 @@ function get_random_shape()
 		}
 		return shapes[flr(rnd(#shapes)) + 1]
 end
+
 __gfx__
 00000000bbaaaaab5545554588488488000000000000000000000000dddddddddddddddddddddddd000000000000000000000000000000000000000000000000
 00000000bbf0f0bb5555555444444444000000000000000000000000dddddddddddddddddddddddd000000000000000000000000000000000000000000000000
@@ -296,6 +297,10 @@ __gff__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000500000000000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000001500000000001600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
