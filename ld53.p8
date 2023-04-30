@@ -2,34 +2,34 @@ pico-8 cartridge // http://www.pico-8.com
 version 38
 __lua__
 function _init()
-    p = {
-        x = 0,
-        y = 0,
-				    speed = 1,
-        flipped = false
-    }
+	p = {
+		x = 0,
+		y = 0,
+		speed = 1,
+		flipped = false
+	}
 end
 
 function _update60()
-		if (btn(⬆️)) p.y -= p.speed
-    if (btn(⬇️)) p.y += p.speed
-    if (btn(⬅️)) then
-        p.x -= p.speed
-        p.flipped = true
-    end
-    if (btn(➡️)) then
-        p.x += p.speed
-        p.flipped = false
-    end    
+	if (btn(⬆️)) p.y -= p.speed
+	if (btn(⬇️)) p.y += p.speed
+	if (btn(⬅️)) then
+		p.x -= p.speed
+		p.flipped = true
+	end
+	if (btn(➡️)) then
+		p.x += p.speed
+		p.flipped = false
+	end    
 end
 
 function _draw()
-    cls()
-    palt(11, true)
-    palt(0, false)
-    
-    rectfill(0, 0, 128, 128, 12)
-    spr(1, p.x, p.y, 1, 1, p.flipped)
+	cls()
+	palt(11, true)
+	palt(0, false)
+	
+	rectfill(0, 0, 128, 128, 12)
+	spr(1, p.x, p.y, 1, 1, p.flipped)
 end
 __gfx__
 00000000bbaaaaab0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
